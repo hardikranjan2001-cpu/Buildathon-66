@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Worker Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #2E7D32;
+            --accent-color: #0288D1;
+            --danger-color: #d32f2f;
+            --text-dark: #333;
+            --text-light: #555;
+            --bg-light: #d5dbcb;
+            --white: #ffffff;
+            --border-color: #e0e0e0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Lato', sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* --- Header --- */
+        .main-header {
+            display: none; /* Hide the entire header */
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .header-logo {
+            font-weight: bold;
+            font-size: 24px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .header-actions .btn {
+            font-family: 'Montserrat', sans-serif;
+            padding: 10px 20px;
+            border: 2px solid var(--primary-color);
+            border-radius: 5px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            margin-left: 10px;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+
+        /* --- Main Content --- */
+        .dashboard-header {
+            margin-bottom: 30px;
+        }
+
+        .dashboard-header h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 32px;
+            
+            margin-bottom: 5px;
+        }
+
+        .dashboard-header p {
+            color: var(--text-light);
+            font-size: 16px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--white);
+            border-radius: 10px;
+            padding: 25px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .stat-card .icon {
+            font-size: 36px;
+            padding: 15px;
+            border-radius: 50%;
+            color: var(--white);
+        }
+
+        .stat-card .icon.primary { background-color: var(--primary-color); }
+        .stat-card .icon.accent { background-color: var(--accent-color); }
+        .stat-card .icon.orange { background-color: #f57c00; }
+
+        .stat-card .info .number {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .stat-card .info .label {
+            color: var(--text-light);
+            font-size: 14px;
+        }
+
+        /* --- Main Layout Grid --- */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+        }
+
+        /* --- Task List Section --- */
+        .task-list-section {
+            background: var(--white);
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            height: 600px;
+            overflow-y: auto;
+        }
+
+        .task-list-section h2 {
+            font-family: 'Montserrat', sans-serif;
+            margin-bottom: 20px;
+        }
+
+        .task-item {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .task-item:hover {
+            background-color: var(--bg-light);
+        }
+
+        .task-item.completed {
+            text-decoration: line-through;
+            color: var(--text-light);
+        }
+
+        .task-item h3 {
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .task-item p {
+            font-size: 14px;
+            color: var(--text-light);
+        }
+
+        /* --- Map Section --- */
+        .map-section {
+            background: var(--white);
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+            border-radius: 8px;
+            flex-grow: 1;
+        }
+
+        @media (max-width: 1200px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Header has been removed -->
+
+    <main class="container">
+        <div class="dashboard-header">
+            <h1>Worker Dashboard</h1>
+            <p>Your assigned collection route for today.</p>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="stat-card">
+                <div class="icon accent"><i class="fas fa-map-marker-alt"></i></div>
+                <div class="info">
+                    <div class="number" data-target="15">0</div>
+                    <div class="label">Assigned Pickups</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="icon primary"><i class="fas fa-check-circle"></i></div>
+                <div class="info">
+                    <div class="number" data-target="4">0</div>
+                    <div class="label">Completed Today</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="icon orange"><i class="fas fa-weight-hanging"></i></div>
+                <div class="info">
+                    <div class="number" data-target="1.2">0</div>
+                    <div class="label">Tons Collected Today</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-layout">
+            <div class="task-list-section">
+                <h2>Today's Route</h2>
+                <div id="task-list">
+                    <!-- Tasks will be dynamically inserted here -->
+                </div>
+            </div>
+            <div class="map-section">
+                <h2>Route Map</h2>
+                <div id="map"></div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Logout functionality has been removed as the button is gone.
+
+            // Animated stats counter
+            const animateCounters = () => {
+                const counters = document.querySelectorAll('.dashboard-grid .number');
+                counters.forEach(counter => {
+                    const target = +counter.getAttribute('data-target');
+                    if (isNaN(target) || counter.dataset.animated) return;
+                    counter.dataset.animated = true;
+
+                    const duration = 500;
+                    let current = 0;
+                    const isFloat = target % 1 !== 0;
+
+                    const timer = setInterval(() => {
+                        const increment = target / (duration / 16);
+                        current += increment;
+
+                        if (current >= target) {
+                            current = target;
+                            clearInterval(timer);
+                        }
+
+                        if (isFloat) {
+                            counter.innerText = current.toFixed(1);
+                        } else {
+                            counter.innerText = Math.ceil(current).toLocaleString();
+                        }
+                    }, 16);
+                });
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting) {
+                    animateCounters();
+                    observer.disconnect();
+                }
+            }, { threshold: 0.5 });
+
+            const grid = document.querySelector('.dashboard-grid');
+            if (grid) {
+                observer.observe(grid);
+            }
+
+            // Task and Map Logic
+            const tasks = [
+                { id: 1, address: "Pari Chowk", type: "Overflow Report", lat: 28.6139, lng: 77.2090, completed: false },
+                { id: 2, address: "Knowledge Park II", type: "Scheduled Pickup", lat: 28.6315, lng: 77.2167, completed: false },
+                { id: 3, address: "Beta I", type: "Overflow Report", lat: 28.5355, lng: 77.3910, completed: false },
+                { id: 4, address: "Gamma I", type: "Scheduled Pickup", lat: 28.5800, lng: 77.3100, completed: false },
+            ];
+
+            const taskListContainer = document.getElementById('task-list');
+            const map = L.map('map').setView([28.58, 77.25], 11);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: null 
+            }).addTo(map);
+
+            // --- Custom Map Icons ---
+            const greenIcon = new L.Icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            });
+
+            const redIcon = new L.Icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            });
+
+            tasks.forEach(task => {
+                // Add task to list
+                const taskElement = document.createElement('div');
+                taskElement.className = 'task-item';
+                taskElement.dataset.id = task.id;
+                taskElement.innerHTML = `<h3>${task.address}</h3><p>${task.type}</p>`;
+                taskListContainer.appendChild(taskElement);
+
+                // Add marker to map
+                const marker = L.marker([task.lat, task.lng], { 
+                    icon: task.completed ? greenIcon : redIcon 
+                }).addTo(map);
+                marker.bindPopup(`<b>${task.address}</b><br>${task.type}`);
+
+                taskElement.addEventListener('click', () => {
+                    map.flyTo([task.lat, task.lng], 15);
+                    marker.openPopup();
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>

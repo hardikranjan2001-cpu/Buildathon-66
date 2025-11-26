@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Waste Segregation System</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- External Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://unpkg.com/qr-scanner@1.4.2/qr-scanner.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="container">
+                <div class="nav-brand">
+                    <h2>🗂️ Smart Waste Segregation</h2>
+                </div>
+                <div class="nav-menu">
+                    <button class="nav-link" data-page="home">Home</button>
+                    <button class="nav-link" data-page="scan-qr">Scan QR</button>
+                    <button class="nav-link" data-page="generate-qr">Generate QR</button>
+                    <button class="nav-link" data-page="results">Results</button>
+                    <button class="nav-link" data-page="settings">Settings</button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Home Page -->
+        <div id="home" class="page active">
+            <div class="container">
+                <div class="hero-section">
+                    <h1>Smart Waste Segregation System</h1>
+                    <p>Advanced waste classification using AWS Rekognition technology with QR-based user tracking and automated reward system.</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3 id="total-users">0</h3>
+                        <p>Total Users</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="correct-segregations">0</h3>
+                        <p>Correct Segregations</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="rewards-given">0</h3>
+                        <p>Points Rewarded</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="fines-collected">0</h3>
+                        <p>Points Fined</p>
+                    </div>
+                </div>
+
+                <div class="waste-categories">
+                    <h2>Waste Categories</h2>
+                    <div class="categories-grid">
+                        <div class="category-card dry-waste">
+                            <div class="category-icon">🗞️</div>
+                            <h3>Dry Waste</h3>
+                            <p>Paper, cardboard, plastic bottles, cans</p>
+                        </div>
+                        <div class="category-card wet-waste">
+                            <div class="category-icon">🍎</div>
+                            <h3>Wet Waste</h3>
+                            <p>Food scraps, vegetable peels, fruit waste</p>
+                        </div>
+                        <div class="category-card hazardous-waste">
+                            <div class="category-icon">🔋</div>
+                            <h3>Hazardous Waste</h3>
+                            <p>Batteries, electronics, chemicals, medicines</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Generate QR Page -->
+        <div id="generate-qr" class="page">
+            <div class="container">
+                <h1>Generate User QR Code</h1>
+                
+                <div class="form-section">
+                    <div class="card">
+                        <div class="card__body">
+                            <form id="user-form">
+                                <div class="form-group">
+                                    <label class="form-label" for="user-name">Full Name</label>
+                                    <input type="text" id="user-name" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="user-phone">Phone Number</label>
+                                    <input type="tel" id="user-phone" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="user-email">Email Address</label>
+                                    <input type="email" id="user-email" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="user-address">Address</label>
+                                    <textarea id="user-address" class="form-control" rows="3" required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn--primary btn--full-width">Generate QR Code</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="qr-result" class="qr-result hidden">
+                    <div class="card">
+                        <div class="card__body">
+                            <h3>QR Code Generated Successfully!</h3>
+                            <div id="qr-code-container"></div>
+                            <div id="user-details"></div>
+                            <button id="download-qr" class="btn btn--secondary">Download QR Code</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scan QR Page -->
+        <div id="scan-qr" class="page">
+            <div class="container">
+                <h1>Scan QR Code</h1>
+                
+                <div class="scanner-section">
+                    <div class="card">
+                        <div class="card__body">
+                            <div id="scanner-container">
+                                <div id="qr-scanner-area">
+                                    <video id="qr-video" class="scanner-video"></video>
+                                    <div class="scanner-overlay">
+                                        <div class="scanner-frame"></div>
+                                    </div>
+                                </div>
+                                <button id="start-scanner" class="btn btn--primary">Start Scanner</button>
+                                <button id="stop-scanner" class="btn btn--secondary hidden">Stop Scanner</button>
+                            </div>
+                            
+                            <div id="manual-input" class="manual-input">
+                                <p>Or enter User ID manually:</p>
+                                <div class="flex gap-8">
+                                    <input type="text" id="manual-user-id" class="form-control" placeholder="Enter User ID">
+                                    <button id="manual-submit" class="btn btn--outline">Submit</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="user-info" class="user-info hidden">
+                    <div class="card">
+                        <div class="card__header">
+                            <h3>User Information</h3>
+                        </div>
+                        <div class="card__body">
+                            <div id="user-details-display"></div>
+                            <button id="start-recording" class="btn btn--primary btn--full-width">Start Waste Segregation Process</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="recording-section" class="recording-section hidden">
+                    <div class="card">
+                        <div class="card__body">
+                            <h3>Recording Video...</h3>
+                            <div class="recording-status">
+                                <div class="recording-indicator"></div>
+                                <span id="recording-timer">90</span> seconds remaining
+                            </div>
+                            <div class="progress-bar">
+                                <div id="recording-progress" class="progress-fill"></div>
+                            </div>
+                            <video id="recording-video" class="recording-video" autoplay muted></video>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="processing-section" class="processing-section hidden">
+                    <div class="card">
+                        <div class="card__body">
+                            <h3>Processing Video...</h3>
+                            <div class="processing-steps">
+                                <div class="processing-step" id="step-frames">
+                                    <span class="step-icon">📹</span>
+                                    <span class="step-text">Extracting frames...</span>
+                                    <span class="step-status">⏳</span>
+                                </div>
+                                <div class="processing-step" id="step-analysis">
+                                    <span class="step-icon">🔍</span>
+                                    <span class="step-text">Analyzing with AWS Rekognition...</span>
+                                    <span class="step-status">⏳</span>
+                                </div>
+                                <div class="processing-step" id="step-classification">
+                                    <span class="step-icon">🏷️</span>
+                                    <span class="step-text">Classifying waste items...</span>
+                                    <span class="step-status">⏳</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Page -->
+        <div id="results" class="page">
+            <div class="container">
+                <h1>Segregation Results</h1>
+                
+                <div id="current-result" class="current-result hidden">
+                    <div class="card">
+                        <div class="card__header">
+                            <h3>Latest Classification Result</h3>
+                        </div>
+                        <div class="card__body">
+                            <div id="detection-results"></div>
+                            <div id="evaluation-result"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="results-history">
+                    <div class="card">
+                        <div class="card__header">
+                            <h3>User History</h3>
+                            <button id="export-csv" class="btn btn--outline btn--sm">Export CSV</button>
+                        </div>
+                        <div class="card__body">
+                            <div class="table-container">
+                                <table id="results-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>User Name</th>
+                                            <th>Detected Items</th>
+                                            <th>Category</th>
+                                            <th>Correctness</th>
+                                            <th>Points</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="results-tbody">
+                                        <!-- Results will be populated here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Page -->
+        <div id="settings" class="page">
+            <div class="container">
+                <h1>AWS Configuration</h1>
+                
+                <div class="settings-section">
+                    <div class="card">
+                        <div class="card__header">
+                            <h3>AWS Credentials</h3>
+                        </div>
+                        <div class="card__body">
+                            <form id="aws-settings-form">
+                                <div class="form-group">
+                                    <label class="form-label" for="aws-access-key">AWS Access Key ID</label>
+                                    <input type="text" id="aws-access-key" class="form-control" placeholder="AKIA...">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="aws-secret-key">AWS Secret Access Key</label>
+                                    <input type="password" id="aws-secret-key" class="form-control" placeholder="Your secret key">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="aws-region">AWS Region</label>
+                                    <select id="aws-region" class="form-control">
+                                        <option value="us-east-1">US East (N. Virginia)</option>
+                                        <option value="us-west-2">US West (Oregon)</option>
+                                        <option value="eu-west-1">Europe (Ireland)</option>
+                                        <option value="ap-southeast-1">Asia Pacific (Singapore)</option>
+                                        <option value="ap-south-1">Asia Pacific (Mumbai)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="rekognition-endpoint">Rekognition Service Endpoint</label>
+                                    <input type="url" id="rekognition-endpoint" class="form-control" placeholder="https://rekognition.us-east-1.amazonaws.com">
+                                </div>
+                                <div class="form-actions">
+                                    <button type="button" id="test-connection" class="btn btn--outline">Test Connection</button>
+                                    <button type="submit" class="btn btn--primary">Save Configuration</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="connection-status" class="connection-status hidden">
+                    <div class="card">
+                        <div class="card__body">
+                            <div id="status-message"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
