@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Smart City Dashboard Login</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Custom Styles for Dashboard & Login */
+        body { font-family: 'Poppins', sans-serif; }
+        .truck-icon {
+            font-size: 28px;
+            line-height: 28px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
+        #map { border-radius: 0.5rem; overflow: hidden; z-index: 1; }
+        /* Ensure the login screen takes up the full viewport */
+        .login-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* Placeholder background image from Login file */
+            background-image: url('https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?q=80&w=2070&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 text-gray-800 font-sans">
+
+    <div id="loginContainer" class="login-screen">
+        <div class="absolute inset-0 z-0 bg-black/50"></div>
+        <div class="relative z-10 p-4 md:p-10 rounded-[2rem] shadow-2xl w-full max-w-[400px] bg-white/95 backdrop-blur-sm border border-white/50">
+            
+            <div class="text-center mb-8">
+                <h1 class="text-4xl font-bold text-green-600 tracking-wide">Login</h1>
+            </div>
+
+            <form id="loginForm" class="space-y-5">
+                
+                <div class="relative group">
+                    <select id="userType" class="w-full bg-gray-100 text-gray-500 border-none rounded-full px-6 py-3.5 focus:outline-none focus:ring-2 focus:ring-green-400 appearance-none cursor-pointer text-sm">
+                        <option value="" disabled selected>Select User Type</option>
+                        <option value="officer">🏢 Municipal Officer</option>
+                        <option value="worker">👷 Worker</option>
+                        <option value="citizen">🧍 Citizen</option>
+                        <option value="recycler">♻️ Recycler</option>
+                    </select>
+                    <div class="absolute right-5 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-400">
+                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <input type="text" placeholder="Username (e.g.,user123)" id="username"
+                        class="w-full bg-gray-100 text-gray-700 placeholder-gray-400 border-none rounded-full px-6 py-3.5 focus:outline-none focus:ring-2 focus:ring-green-400 transition-all shadow-inner-sm">
+                    <span class="absolute right-5 top-1/2 transform -translate-y-1/2 text-purple-800 text-lg">
+                        <i class="fa-solid fa-user"></i> 
+                    </span>
+                </div>
+
+                <div class="relative">
+                    <input type="password" placeholder="Password (e.g., 1234)" id="password"
+                        class="w-full bg-gray-100 text-gray-700 placeholder-gray-400 border-none rounded-full px-6 py-3.5 focus:outline-none focus:ring-2 focus:ring-green-400 transition-all shadow-inner-sm">
+                    <span class="absolute right-5 top-1/2 transform -translate-y-1/2 text-yellow-500 text-lg">
+                        <i class="fa-solid fa-lock"></i>
+                    </span>
+                </div>
+
+                <button type="button" onclick="handleLogin()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 rounded-full shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 mt-4 text-lg">
+                    Login
+                </button>
+                
+                <p id="loginMessage" class="text-center text-sm text-red-500 hidden mt-2">Invalid credentials.</p>
+            </form>
+        </div>
+    </div>
+
+    <div id="dashboardContainer" class="hidden">
+        
+        <header class="bg-green-700 text-white p-6 shadow-md sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-city text-3xl"></i>
+                    <h1 class="text-2xl font-bold">Municipal Dashboard</h1>
+                </div>
+                <span class="italic text-sm md:text-base mt-2 md:mt-0 opacity-90">Welcome, Officer. Here is the real-time overview of waste management activities.</span>
+            </div>
+        </header>
+
+        <main class="max-w-7xl mx-auto p-6">
+            
+            <section class="mb-8">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700">📈 Key Performance Indicators</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    
+                    <div class="bg-white rounded-lg shadow-md p-6 flex items-center transition hover:shadow-lg">
+                        <div class="p-4 rounded-full bg-green-100 text-green-600 mr-4">
+                            <i class="fas fa-recycle text-2xl"></i>
+                        </div>
+                        <div>
+                            <div class="text-3xl font-bold text-gray-800 counter" data-target="82">0</div>
+                            <div class="text-sm text-gray-500 font-medium">City Recycling Rate (%)</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow-md p-6 flex items-center transition hover:shadow-lg">
+                        <div class="p-4 rounded-full bg-blue-100 text-blue-600 mr-4">
+                            <i class="fas fa-truck text-2xl"></i>
+                        </div>
+                        <div>
+                            <div class="text-3xl font-bold text-gray-800 counter" data-target="125">0</div>
+                            <div class="text-sm text-gray-500 font-medium">Active Collection Vehicles</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow-md p-6 flex items-center transition hover:shadow-lg">
+                        <div class="p-4 rounded-full bg-red-100 text-red-600 mr-4">
+                            <i class="fas fa-exclamation-triangle text-2xl"></i>
+                        </div>
+                        <div>
+                            <div class="text-3xl font-bold text-gray-800 counter" data-target="12">0</div>
+                            <div class="text-sm text-gray-500 font-medium">New Overflow Reports</div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <section class="lg:col-span-2">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold text-gray-700">📊 Live Bin Status</h2>
+                        <span class="text-xs bg-gray-200 px-2 py-1 rounded text-gray-600">Auto-refreshing...</span>
+                    </div>
+                    <div id="binGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+                </section>
+
+                <aside class="bg-white shadow-md rounded-lg p-4 h-full flex flex-col">
+                    <h3 class="text-lg font-semibold mb-3 border-b pb-2">🔔 Live Dispatch Log</h3>
+                    <div id="notifications" class="space-y-2 flex-grow overflow-y-auto max-h-[400px]">
+                        <div class="text-sm text-gray-400 italic text-center mt-4">System initialized. Waiting for events...</div>
+                    </div>
+                    <div class="mt-4 pt-2 border-t">
+                        <button id="clearLogs" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-3 py-2 rounded transition">
+                            Clear Logs
+                        </button>
+                    </div>
+                </aside>
+            </div>
+
+            <section class="bg-white shadow-md p-6 mt-8 rounded-lg relative">
+                <div class="flex justify-between items-end mb-4">
+                    <div>
+                        <h2 class="text-xl font-semibold">🚨 Dynamic Routing Map</h2>
+                        <p class="text-gray-500 text-sm">Optimized routes display based on real-time fill-level sensors.</p>
+                    </div>
+                    <div class="text-right">
+                        <span id="routeStatus" class="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Waiting for route...</span>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="flex justify-between text-xs text-gray-600 mb-1">
+                        <span id="progressLabel">System Idle</span>
+                        <span id="progressPercent">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div id="progressBar" class="bg-green-600 h-2.5 rounded-full transition-all duration-500" style="width:0%"></div>
+                    </div>
+                </div>
+
+                <div id="map" class="h-96 w-full shadow-inner border border-gray-200"></div>
+            </section>
+
+            <section class="p-6 mt-6 bg-white rounded-lg shadow-sm border border-gray-200">
+                <h2 class="text-xl font-semibold mb-4 text-center">🌍 Impact Analysis</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-green-50 p-4 rounded-lg border border-green-100">
+                        <h3 class="font-bold text-green-800 mb-2"><i class="fas fa-leaf mr-2"></i>Environmental</h3>
+                        <p class="text-sm text-gray-600">Reduces CO2 emissions by optimizing fuel usage and preventing street litter overflow.</p>
+                    </div>
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                        <h3 class="font-bold text-blue-800 mb-2"><i class="fas fa-users mr-2"></i>Social</h3>
+                        <p class="text-sm text-gray-600">Improves public hygiene and creates a cleaner living environment for citizens.</p>
+                    </div>
+                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-100">
+                        <h3 class="font-bold text-yellow-800 mb-2"><i class="fas fa-chart-line mr-2"></i>Economic</h3>
+                        <p class="text-sm text-gray-600">Reduces operational costs by shifting from fixed schedules to demand-based collection.</p>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <footer class="bg-gray-800 text-gray-400 p-8 mt-10">
+            <div class="max-w-7xl mx-auto text-center">
+                <p class="mb-2">🚀 Buildathon 1.0 | HackerWar</p>
+                <p class="text-sm">KCC Institutes Greater Noida • Smart City Initiative</p>
+            </div>
+        </footer>
+    </div>
+
+
+    <script>
+        // --- LOGIN TRANSITION LOGIC ---
+        
+        function handleLogin() {
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const loginMessage = document.getElementById('loginMessage');
+            const btn = document.querySelector('#loginForm button');
+
+            // Simple validation (Accepts officer123/1234 or any combination for demo)
+            const isValid = (usernameInput.value === 'officer123' && passwordInput.value === '1234') || 
+                            (usernameInput.value.length > 3 && passwordInput.value.length > 3);
+
+            // Simulate loading state
+            const originalText = btn.innerText;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Logging in...';
+            btn.classList.add('opacity-75', 'cursor-not-allowed');
+            loginMessage.classList.add('hidden');
+
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.classList.remove('opacity-75', 'cursor-not-allowed');
+
+                if (isValid) {
+                    // SUCCESS: Hide login, show dashboard
+                    document.getElementById('loginContainer').style.display = 'none';
+                    document.getElementById('dashboardContainer').classList.remove('hidden');
+                    
+                    // Crucial: Initialize dashboard components after they become visible
+                    initDashboard();
+                } else {
+                    // FAILURE
+                    loginMessage.textContent = 'Invalid username or password.';
+                    loginMessage.classList.remove('hidden');
+                }
+            }, 1500);
+        }
+
+        // --- DASHBOARD INITIALIZATION FUNCTION ---
+        // Contains the logic from the original dashboard script
+        function initDashboard() {
+            
+            // --- PART 1: TOP STATS ANIMATION ---
+            const counters = document.querySelectorAll('.counter');
+            const speed = 200;
+
+            counters.forEach(counter => {
+                const updateCount = () => {
+                    const target = +counter.getAttribute('data-target');
+                    const count = +counter.innerText;
+                    
+                    const inc = target / speed;
+
+                    if (count < target) {
+                        counter.innerText = Math.ceil(count + inc);
+                        setTimeout(updateCount, 20);
+                    } else {
+                        counter.innerText = target;
+                    }
+                };
+                updateCount();
+            });
+
+            // --- PART 2: CORE SIMULATION LOGIC ---
+            
+            // --- Config ---
+            const SENSOR_INTERVAL_MS = 6000;
+            const TRUCK_STEP_MS = 600;
+            const TRUCK_SPEED_FACTOR = 0.04;
+            const MUNICIPAL_CENTER = { name: "Municipal Control Center", coords: [28.4765, 77.5002] };
+
+            // --- Data: bins with coordinates (Greater Noida area) ---
+            const bins = [
+                { id: 1, location: "Pari Chowk", status: "Full", coords: [28.4744, 77.5030], marker: null },
+                { id: 2, location: "Knowledge Park II", status: "Half", coords: [28.4720, 77.5100], marker: null },
+                { id: 3, location: "Kailash Hospital", status: "Empty", coords: [28.4780, 77.5070], marker: null },
+                { id: 4, location: "Gamma I", status: "Half", coords: [28.4793, 77.4981], marker: null },
+                { id: 5, location: "Beta I", status: "Empty", coords: [28.4629, 77.5047], marker: null }
+            ];
+
+            // --- UI Helpers ---
+            const binGrid = document.getElementById("binGrid");
+            const notifications = document.getElementById("notifications");
+            const clearLogsBtn = document.getElementById("clearLogs");
+            const routeStatus = document.getElementById("routeStatus");
+            const progressBar = document.getElementById("progressBar");
+            const progressLabel = document.getElementById("progressLabel");
+            const progressPercent = document.getElementById("progressPercent");
+
+            function log(message, type = "info") {
+                const time = new Date().toLocaleTimeString();
+                const item = document.createElement("div");
+                
+                let borderClass = "border-l-4 border-gray-400";
+                if(type === "alert") borderClass = "border-l-4 border-red-500 bg-red-50";
+                if(type === "success") borderClass = "border-l-4 border-green-500 bg-green-50";
+
+                item.className = `text-sm rounded p-2 mb-2 animate-pulse ${borderClass}`;
+                item.innerHTML = `<span class="font-bold text-gray-600">[${time}]</span> ${message}`;
+                
+                if(notifications.children.length === 1 && notifications.children[0].classList.contains("text-center")) {
+                    notifications.innerHTML = "";
+                }
+                notifications.prepend(item);
+                
+                setTimeout(() => { item.classList.remove("animate-pulse"); }, 2000);
+            }
+
+            clearLogsBtn.addEventListener("click", () => {
+                notifications.innerHTML = '<div class="text-sm text-gray-400 italic text-center mt-4">Logs cleared.</div>';
+            });
+
+            function setProgress(percent, label, statusClass) {
+                progressBar.style.width = `${percent}%`;
+                progressPercent.textContent = `${percent}%`;
+                progressLabel.textContent = label || "";
+                
+                if(statusClass === "active") {
+                    progressBar.classList.remove("bg-green-600");
+                    progressBar.classList.add("bg-blue-500");
+                } else {
+                    progressBar.classList.remove("bg-blue-500");
+                    progressBar.classList.add("bg-green-600");
+                }
+            }
+
+            // --- Render bin cards ---
+            function renderBins() {
+                binGrid.innerHTML = "";
+                bins.forEach(bin => {
+                    let colorClass = "border-green-500";
+                    let statusBadge = "bg-green-100 text-green-700";
+                    let buttonLabel = "✅ Clean";
+                    let buttonClass = "bg-gray-100 text-gray-400 cursor-not-allowed";
+                    let icon = "fa-check-circle";
+
+                    if (bin.status === "Full") {
+                        colorClass = "border-red-500";
+                        statusBadge = "bg-red-100 text-red-700 animate-pulse";
+                        buttonLabel = "🚛 Dispatch";
+                        buttonClass = "bg-red-600 hover:bg-red-700 text-white shadow-md";
+                        icon = "fa-exclamation-circle";
+                    } else if (bin.status === "Half") {
+                        colorClass = "border-yellow-500";
+                        statusBadge = "bg-yellow-100 text-yellow-700";
+                        buttonLabel = "📅 Schedule";
+                        buttonClass = "bg-yellow-500 hover:bg-yellow-600 text-white shadow-md";
+                        icon = "fa-minus-circle";
+                    }
+
+                    const card = document.createElement("div");
+                    card.className = `bg-white shadow rounded-lg p-4 border-l-8 ${colorClass} flex flex-col justify-between`;
+
+                    card.innerHTML = `
+                        <div>
+                            <div class="flex justify-between items-start">
+                                <h3 class="text-lg font-bold text-gray-800">${bin.location}</h3>
+                                <i class="fas ${icon} text-xl ${statusBadge.split(' ')[2]}"></i>
+                            </div>
+                            <p class="mt-2 text-sm text-gray-600">Fill Level: <span class="px-2 py-0.5 rounded text-xs font-bold uppercase ${statusBadge}">${bin.status}</span></p>
+                        </div>
+                        <button class="mt-4 w-full py-2 rounded font-semibold transition ${buttonClass}">${buttonLabel}</button>
+                    `;
+
+                    const btn = card.querySelector("button");
+                    if (bin.status !== "Empty") {
+                        btn.addEventListener("click", () => {
+                            log(`Manual dispatch requested to <b>${bin.location}</b>.`, "alert");
+                            bin.status = "Full";
+                            renderBins();
+                            updateRoute();
+                        });
+                    }
+
+                    binGrid.appendChild(card);
+                });
+            }
+
+            // --- Map init (Must be called after map div is visible) ---
+            const map = L.map('map').setView(MUNICIPAL_CENTER.coords, 14);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            const centerMarker = L.marker(MUNICIPAL_CENTER.coords, {
+                title: MUNICIPAL_CENTER.name
+            }).addTo(map).bindPopup(`<b>🏢 ${MUNICIPAL_CENTER.name}</b><br>HQ`);
+
+            bins.forEach(bin => {
+                bin.marker = L.marker(bin.coords).addTo(map)
+                    .bindPopup(`<b>🗑️ ${bin.location}</b><br>Status: ${bin.status}`);
+            });
+
+            // --- Route and truck state ---
+            let routeLine = null;
+            let truckMarker = null;
+            let truckTimer = null;
+
+            function interpolate(from, to, t) {
+                const lat = from[0] + (to[0] - from[0]) * t;
+                const lng = from[1] + (to[1] - from[1]) * t;
+                return [lat, lng];
+            }
+
+            async function animateTruck(routeCoords) {
+                if (truckTimer) {
+                    clearInterval(truckTimer);
+                    truckTimer = null;
+                }
+                if (truckMarker) {
+                    map.removeLayer(truckMarker);
+                    truckMarker = null;
+                }
+
+                if (!routeCoords || routeCoords.length < 2) {
+                    setProgress(0, "System Idle");
+                    routeStatus.textContent = "Idle";
+                    routeStatus.className = "inline-block px-3 py-1 text-xs font-semibold rounded-full bg-gray-200 text-gray-600";
+                    return;
+                }
+
+                truckMarker = L.marker(routeCoords[0], {
+                    icon: L.divIcon({
+                        className: "truck-icon",
+                        html: "🚛",
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 15]
+                    })
+                }).addTo(map);
+
+                setProgress(5, "Truck Dispatched", "active");
+                routeStatus.textContent = "Vehicle En Route";
+                routeStatus.className = "inline-block px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 animate-pulse";
+
+                let segmentIndex = 0;
+                let t = 0;
+
+                truckTimer = setInterval(() => {
+                    const from = routeCoords[segmentIndex];
+                    const to = routeCoords[segmentIndex + 1];
+
+                    t += TRUCK_SPEED_FACTOR; 
+                    
+                    if (t >= 1) {
+                        truckMarker.setLatLng(to);
+                        segmentIndex += 1;
+                        t = 0;
+
+                        const totalSegments = routeCoords.length - 1;
+                        const progress = Math.min(Math.floor((segmentIndex / totalSegments) * 100), 95);
+                        setProgress(progress, `Collecting... (${segmentIndex}/${totalSegments})`, "active");
+
+                        if (segmentIndex >= totalSegments) {
+                            clearInterval(truckTimer);
+                            truckTimer = null;
+                            setProgress(100, "Route Complete", "success");
+                            routeStatus.textContent = "Mission Accomplished";
+                            routeStatus.className = "inline-block px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800";
+                            log("Truck returned to base. Mission complete.", "success");
+                            
+                            setTimeout(() => {
+                                bins.filter(b => b.status === "Full").forEach(b => b.status = "Empty");
+                                renderBins();
+                            }, 1000);
+                        }
+                    } else {
+                        const pos = interpolate(from, to, t);
+                        truckMarker.setLatLng(pos);
+                    }
+                }, TRUCK_STEP_MS);
+            }
+
+            function buildRoute() {
+                const pickupBins = bins.filter(b => b.status !== "Empty");
+                if (pickupBins.length === 0) return [];
+
+                const coords = [MUNICIPAL_CENTER.coords, ...pickupBins.map(b => b.coords)];
+                coords.push(MUNICIPAL_CENTER.coords);
+                return coords;
+            }
+
+            function updateRoute() {
+                if (routeLine) {
+                    map.removeLayer(routeLine);
+                    routeLine = null;
+                }
+
+                const routeCoords = buildRoute();
+
+                if (routeCoords.length <= 1) {
+                    if(truckTimer) clearInterval(truckTimer); 
+                    return;
+                }
+
+                routeLine = L.polyline(routeCoords, { color: '#059669', weight: 4, dashArray: '10, 10' }).addTo(map);
+                map.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
+
+                log(`Route optimization complete. ${routeCoords.length - 2} stops identified.`, "info");
+                animateTruck(routeCoords);
+            }
+
+            // Simulate sensor updates
+            function simulateSensor() {
+                const randomBinIndex = Math.floor(Math.random() * bins.length);
+                const bin = bins[randomBinIndex];
+                
+                let newStatus;
+                if(bin.status === "Empty") newStatus = Math.random() > 0.5 ? "Half" : "Empty";
+                else if(bin.status === "Half") newStatus = Math.random() > 0.3 ? "Full" : "Half";
+                else newStatus = "Full";
+
+                if (bin.status !== newStatus) {
+                    bin.status = newStatus;
+                    log(`Alert: <b>${bin.location}</b> is now ${bin.status}`, bin.status === "Full" ? "alert" : "info");
+                    bin.marker.setPopupContent(`<b>🗑️ ${bin.location}</b><br>Status: ${bin.status}`);
+                    
+                    if(newStatus === "Full") {
+                        renderBins();
+                        updateRoute();
+                    } else {
+                        renderBins();
+                    }
+                }
+            }
+
+            // Start dashboard rendering and simulation
+            renderBins();
+            setInterval(simulateSensor, SENSOR_INTERVAL_MS);
+        }
+    </script>
+</body>
+</html>
